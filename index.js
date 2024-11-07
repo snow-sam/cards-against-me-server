@@ -40,6 +40,10 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} left the room ${roomName}`);
   });
 
+  socket.on("give", (room, id, callback) => {
+    callback(dealersMap.get(room).showCards(id))
+  })
+
   socket.on("disconnect", (socket) => {
   })
 });
@@ -61,7 +65,9 @@ io.of("/").adapter.on("join-room", (room, id) => {
   const dealer = dealersMap.get(room)
   const socket = io.sockets.sockets.get(id)
   dealer.introducePlayer(socket.data.id)
-  console.log(dealer.room)
+  if(dealer.room.players.length < 3) return
+
+  io.to(room).emit("newRound", dealer.room.questionDeck.peek()) 
 });
 
 io.of("/").adapter.on("delete-room", (room, id) => {

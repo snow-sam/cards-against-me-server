@@ -8,8 +8,8 @@ export class Dealer {
     }
 
     dealCards = (nCards) => {
-        const { questionDeck } = this.room
-        return questionDeck.pickCards(nCards)
+        const { answerDeck } = this.room
+        return answerDeck.pickCards(nCards)
     }
 
     introducePlayer = (playerId) => {
@@ -19,5 +19,10 @@ export class Dealer {
             this.dealCards(INITIAL_N_CARDS)
         )
         this.room.players.push(player)
+    }
+
+    showCards = (playerId) => {
+        const player = this.room.players.find(player => player.id === playerId);
+        return player.cards
     }
 }
