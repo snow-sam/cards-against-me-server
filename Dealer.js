@@ -13,10 +13,11 @@ export class Dealer {
     }
 
     introducePlayer = (playerId) => {
+        if(this.room.players.some(player => player.id === playerId)) return
         const player = new Player(
             playerId,
             this.dealCards(INITIAL_N_CARDS)
         )
-        this.room.players.add(player)
+        this.room.players.push(player)
     }
 }

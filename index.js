@@ -24,7 +24,8 @@ const roomsMap = new Map();
 const dealersMap = new Map();
 
 io.on("connection", (socket) => {
-  const { roomId } = socket.handshake.query
+  socket.data = socket.handshake.query
+  const { roomId } = socket.data
   if (roomId) socket.join(roomId)
 
   // Enter a specific room
@@ -57,6 +58,10 @@ io.of("/").adapter.on("create-room", async (room) => {
 io.of("/").adapter.on("join-room", (room, id) => {
   if(!roomsMap.has(room)) return
   console.log(`[${room.toUpperCase()}] ${id} entered the room`);
+  const dealer = dealersMap.get(room)
+  const socket = io.sockets.sockets.get(id)
+  dealer.introducePlayer(socket.data.id)
+  console.log(dealer.room)
 });
 
 io.of("/").adapter.on("delete-room", (room, id) => {
