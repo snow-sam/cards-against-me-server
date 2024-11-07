@@ -4,6 +4,7 @@ import express from 'express';
 import { createServer } from "http"
 import { Server } from "socket.io";
 
+import { Dealer } from "./Dealer.js"
 import { Room } from "./Room.js"
 
 dotenv.config()
@@ -20,6 +21,7 @@ const io = new Server(httpServer, {
 });
 
 const roomsMap = new Map();
+const dealersMap = new Map();
 
 io.on("connection", (socket) => {
   const { roomId } = socket.handshake.query
@@ -44,8 +46,12 @@ io.on("connection", (socket) => {
 io.of("/").adapter.on("create-room", async (room) => {
   if (!/room-\d+$/.test(room)) return
   console.log(`[${room.toUpperCase()}] ${room} successfully created!`);
-  roomsMap.set(room, new Room())
-  roomsMap.get(room).init("./mocks/answers.json", "./mocks/questions.json")
+
+  const dealer = new Dealer(new Room())
+  dealer.room.init("./mocks/answers.json", "./mocks/questions.json")
+  
+  roomsMap.set(room, dealer.room)
+  dealersMap.set(room, dealer)
 });
 
 io.of("/").adapter.on("join-room", (room, id) => {

@@ -1,0 +1,1 @@
+export const INITIAL_N_CARDS = 10
