@@ -11,14 +11,14 @@ export class Room {
         this.rounds = []
     }
 
-    #loadCards = async (arq, isQuestionCards = true) => {
-        const cards = new Stack(await getJson(arq))
+    #loadCards = (arq, isQuestionCards = true) => {
+        const cards = new Stack(getJson(arq))
         isQuestionCards ? this.questionDeck = cards : this.answerDeck = cards
     }
 
-    init = async (arqAnswer, arqQuestion) => {
-        await this.#loadCards(arqAnswer, false)
-        await this.#loadCards(arqQuestion, true)
+    init = (arqAnswer, arqQuestion) => {
+        this.#loadCards(arqAnswer, false)
+        this.#loadCards(arqQuestion, true)
         this.answerDeck.shuffle()
         this.questionDeck.shuffle()
     }

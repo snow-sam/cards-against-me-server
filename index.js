@@ -45,7 +45,7 @@ io.of("/").adapter.on("create-room", async (room) => {
   if (!/room-\d+$/.test(room)) return
   console.log(`[${room.toUpperCase()}] ${room} successfully created!`);
   roomsMap.set(room, new Room())
-  await roomsMap.get(room).init("./mocks/answers.json", "./mocks/questions.json")
+  roomsMap.get(room).init("./mocks/answers.json", "./mocks/questions.json")
 });
 
 io.of("/").adapter.on("join-room", (room, id) => {
