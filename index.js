@@ -4,6 +4,7 @@ import express from 'express';
 import { createServer } from "http"
 import { Server } from "socket.io";
 
+import { Dealer } from "./Dealer.js"
 import { Room } from "./Room.js"
 
 dotenv.config()
@@ -20,9 +21,11 @@ const io = new Server(httpServer, {
 });
 
 const roomsMap = new Map();
+const dealersMap = new Map();
 
 io.on("connection", (socket) => {
-  const { roomId } = socket.handshake.query
+  socket.data = socket.handshake.query
+  const { roomId } = socket.data
   if (roomId) socket.join(roomId)
 
   // Enter a specific room
@@ -37,6 +40,10 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} left the room ${roomName}`);
   });
 
+  socket.on("showCards", (room, id, callback) => {
+    callback(dealersMap.get(room).showCards(id))
+  })
+
   socket.on("disconnect", (socket) => {
   })
 });
@@ -44,13 +51,23 @@ io.on("connection", (socket) => {
 io.of("/").adapter.on("create-room", async (room) => {
   if (!/room-\d+$/.test(room)) return
   console.log(`[${room.toUpperCase()}] ${room} successfully created!`);
-  roomsMap.set(room, new Room())
-  await roomsMap.get(room).init("./mocks/answers.json", "./mocks/questions.json")
+
+  const dealer = new Dealer(new Room())
+  dealer.room.init("./mocks/answers.json", "./mocks/questions.json")
+  
+  roomsMap.set(room, dealer.room)
+  dealersMap.set(room, dealer)
 });
 
 io.of("/").adapter.on("join-room", (room, id) => {
   if(!roomsMap.has(room)) return
   console.log(`[${room.toUpperCase()}] ${id} entered the room`);
+  const dealer = dealersMap.get(room)
+  const socket = io.sockets.sockets.get(id)
+  dealer.introducePlayer(socket.data.id)
+  if(dealer.room.players.length < 3) return
+
+  io.to(room).emit("newRound", dealer.room.questionDeck.peek()) 
 });
 
 io.of("/").adapter.on("delete-room", (room, id) => {
