@@ -40,7 +40,7 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} left the room ${roomName}`);
   });
 
-  socket.on("give", (room, id, callback) => {
+  socket.on("showCards", (room, id, callback) => {
     callback(dealersMap.get(room).showCards(id))
   })
 
