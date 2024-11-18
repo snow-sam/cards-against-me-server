@@ -1,13 +1,7 @@
 export class Player {
     constructor(id, cards = []) {
         this.id = id
-        this.cards = cards
+        this.cards = new Set(cards)
         this.blackCards = 0
     }
-
-    changeCard = (oldCard, newCard) => {
-        this.cards = [...this.cards, ...newCard].filter(item => item !== oldCard)
-    }
-
-    win = () => this.blackCards++
 }
