@@ -5,6 +5,7 @@ import { createServer } from "http"
 import { Server } from "socket.io";
 
 import { Room } from "./Room.js"
+import { MIN_PLAYERS } from './constants.js'
 
 dotenv.config()
 
@@ -22,7 +23,8 @@ const io = new Server(httpServer, {
 const roomsMap = new Map();
 
 io.on("connection", (socket) => {
-  const { roomId } = socket.handshake.query
+  socket.data = socket.handshake.query
+  const { roomId } = socket.data
   if (roomId) socket.join(roomId)
 
   // Enter a specific room
@@ -37,6 +39,36 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} left the room ${roomName}`);
   });
 
+  socket.on("getCards", (room, id, callback) => {
+    const { players } = roomsMap.get(room)
+    callback([...players.get(id).cards])
+  })
+
+  socket.on("sendCard", (playerId, card) => {
+    const { roomId } = socket.data
+    const { receiveCard, currentRound } = roomsMap.get(roomId)
+    const { hasToSend, voting } = currentRound
+    receiveCard(playerId, card)
+
+    if (!hasToSend.size) {
+      const mapObject = Object.fromEntries(voting);
+      io.to(roomId).emit("votingFase", mapObject)
+    }
+  })
+
+  socket.on("vote", (playerId, card) => {
+    const { roomId } = socket.data
+    const room = roomsMap.get(roomId)
+
+    room.receiveVote(playerId, card)
+    if (!room.currentRound.hasToVote.size) {
+      room.startNewRound()
+      io.to(roomId).emit("votingFase", [])
+      io.to(roomId).emit("winner", room.getLastWinner())
+      io.to(roomId).emit("newRound", room.questionDeck.peek())
+    }
+  })
+
   socket.on("disconnect", (socket) => {
   })
 });
@@ -45,22 +77,29 @@ io.of("/").adapter.on("create-room", async (room) => {
   if (!/room-\d+$/.test(room)) return
   console.log(`[${room.toUpperCase()}] ${room} successfully created!`);
   roomsMap.set(room, new Room())
-  await roomsMap.get(room).init("./mocks/answers.json", "./mocks/questions.json")
 });
 
-io.of("/").adapter.on("join-room", (room, id) => {
-  if(!roomsMap.has(room)) return
-  console.log(`[${room.toUpperCase()}] ${id} entered the room`);
+io.of("/").adapter.on("join-room", (roomId, id) => {
+  if (!roomsMap.has(roomId)) return
+  console.log(`[${roomId.toUpperCase()}] ${id} entered the room`);
+  const socket = io.sockets.sockets.get(id)
+  const room = roomsMap.get(roomId)
+
+  room.introducePlayer(socket.data.id)
+
+  if (room.players.size < MIN_PLAYERS || room.currentRound) return
+  room.startNewRound()
+  io.to(roomId).emit("newRound", room.questionDeck.peek())
 });
 
 io.of("/").adapter.on("delete-room", (room, id) => {
-  if(!roomsMap.has(room)) return
+  if (!roomsMap.has(room)) return
   console.log(`[${room.toUpperCase()}] ${room} was successfully deleted!`);
   roomsMap.delete(room);
 });
 
 io.of("/").adapter.on("leave-room", (room, id) => {
-  if(!roomsMap.has(room)) return
+  if (!roomsMap.has(room)) return
   console.log(`[${room.toUpperCase()}] ${id} left the room`);
 });
 
