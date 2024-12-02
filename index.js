@@ -39,7 +39,7 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} left the room ${roomName}`);
   });
 
-  socket.on("showCards", (room, id, callback) => {
+  socket.on("getCards", (room, id, callback) => {
     const { players } = roomsMap.get(room)
     callback([...players.get(id).cards])
   })
